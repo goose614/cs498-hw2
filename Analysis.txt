@@ -1,1 +1,11 @@
+Here are my results from Part IV-(a):
+us-central1 — /register avg latency: 441.94 ms
+us-central1 — /list avg latency: 439.62 ms
+europe-west1 — /register avg latency: 659.65 ms
+europe-west1 — /list avg latency: 589.75 ms
+
+Here are my results from Part IV-(b):
+out of 200 registrations, 0 were not immediately visible on the other instance
+
+
 
