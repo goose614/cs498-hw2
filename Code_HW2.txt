@@ -1,1 +1,82 @@
+Below is the code I used for Part IV.
 
+import requests
+import time
+
+server1 = "http://136.112.51.153:8080"  # us-central1
+server2 = "http://34.38.185.67:8080"  # europe-west1
+
+
+# part a
+def clear_server(server_url):
+    try:
+        res = requests.post(f"{server_url}/clear")
+
+        if res.status_code == 200:
+            print(f"Cleared users on {server_url}")
+        else:
+            print(f"Failed to clear users on {server_url}: {res.status_code}")
+
+    except Exception as e:
+        print(f"Error clearing {server_url}: {e}")
+
+def measure_latency(request, instance_url, num_requests=10, register=False):
+    times = []
+
+    for i in range(num_requests):
+        start = time.time()
+
+        try:
+            if register:
+                username = f"test{i}_{ int(time.time() * 1000) }"
+                requests.post(f"{instance_url}{request}", json={"username": username})
+            else:
+                requests.get(f"{instance_url}{request}")
+        except Exception as e:
+            print(f"error from {request} for {instance_url}: {e}")
+            continue
+
+        end = time.time()
+        times.append((end - start) * 1000)  # convert to ms
+
+    avg = 0
+    if times:
+      avg = sum(times) / len(times)
+    return avg
+
+clear_server(server1)
+clear_server(server2)
+
+for region, url in [("us-central1", server1), ("europe-west1", server2)]:
+    reg_latency = measure_latency("/register", url, register=True)
+    list_latency = measure_latency("/list", url, register=False)
+    print(f"{region} — /register avg latency: {reg_latency:.2f} ms")
+    print(f"{region} — /list avg latency: {list_latency:.2f} ms")
+    # clear_server(url)
+
+
+# part b
+missing = 0
+for i in range(200):
+    # generate a unique username
+    username = f"user{ int(time.time() * 1000) }_{i}"
+    # print("username:", username)
+
+    # post to server1
+    requests.post(f"{server1}/register", json={"username": username})
+
+
+    # check from server2
+    res = requests.get(f"{server1}/list")
+    users = res.json().get("users", [])
+    # print("users:", users)
+
+    if username not in users:
+        missing += 1
+   
+
+print(f"out of 200 registrations, {missing} were not immediately visible on the other instance")
+
+------------------------------------------------------------------------------------------------------------
+
+I used Python to send /register, /list, and /clear requests. For part (a), I created a function called measure_latency() that send either /register or /list requests in a loop, and measured the elapsed time for each request using time.time(). I generated a random username for /register requests using time.time(). Then, I returned the average of the times at the end. Before running the scripts for part (a), I also cleared both servers so that each started with the same baseline (an empty users list) using the clear_server() function I wrote, which sent a /clear request to the specified instance. For part (b), I generated a unique username, posted this user to server1 throught /register, and then immediately sent a /get request and checked if the user was in the returned list. This process was repeated 200 times, and the final "missing" count was printed at the end.
